@@ -1,0 +1,1411 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>三国肉鸽小游戏</title>
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2rem; }
+
+      :root {
+        --bg: #ece1c8;
+        --bg-deep: #e0d0ab;
+        --paper: #f7efdb;
+        --card: #fdf8ea;
+        --ink: #2b2115;
+        --ink-soft: #6b5b40;
+        --ink-faint: #97835f;
+        --red: #a02718;
+        --red-deep: #771a0e;
+        --red-bright: #c33a24;
+        --gold: #a87b24;
+        --gold-soft: #c9a24d;
+        --jade: #3f6b4f;
+        --line: #d3bf96;
+        --line-strong: #b39b62;
+        --shadow: 0 10px 28px rgba(74, 54, 18, 0.18);
+        --hp: #b3352a;
+        --energy: #b8862f;
+        --block: #4a6b8a;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16120d;
+          --bg-deep: #100d09;
+          --paper: #201a12;
+          --card: #282017;
+          --ink: #eee2c6;
+          --ink-soft: #bfae87;
+          --ink-faint: #8d7c58;
+          --red: #d0533a;
+          --red-deep: #a83a26;
+          --red-bright: #e06447;
+          --gold: #d3a24a;
+          --gold-soft: #a97f35;
+          --jade: #6fae86;
+          --line: #453723;
+          --line-strong: #63502f;
+          --shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+          --hp: #cf4a3a;
+          --energy: #d3a24a;
+          --block: #6d92b5;
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Serif SC", "Songti SC", "STSong", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(1100px 500px at 85% -10%, rgba(160, 39, 24, 0.10), transparent 60%),
+          radial-gradient(900px 600px at -10% 110%, rgba(168, 123, 36, 0.12), transparent 55%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+        min-height: 100vh;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 56px; }
+
+      /* ---------- 通用 ---------- */
+      .brush { font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-weight: 700; }
+      .hidden { display: none !important; }
+      .screen { animation: screenIn 0.35s ease both; }
+      @keyframes screenIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        .screen { animation: none; }
+        * { transition: none !important; }
+      }
+
+      .btn {
+        font-family: inherit;
+        cursor: pointer;
+        border: 1px solid var(--line-strong);
+        background: var(--card);
+        color: var(--ink);
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      }
+      @media (hover: hover) {
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn-primary:hover { background: var(--red-deep); }
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn:disabled { opacity: 0.42; cursor: not-allowed; transform: none; box-shadow: none; }
+      .btn-primary { background: var(--red); border-color: var(--red-deep); color: #fdf6e3; }
+      .btn-gold { background: linear-gradient(180deg, var(--gold-soft), var(--gold)); border-color: var(--gold); color: #fff8e6; }
+      .btn-small { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
+
+      /* ---------- 顶部状态栏 ---------- */
+      .statusbar {
+        position: sticky; top: 10px; z-index: 30;
+        display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+        background: var(--paper);
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        padding: 10px 14px;
+        box-shadow: var(--shadow);
+      }
+      .statusbar .who { font-weight: 900; font-size: 16px; }
+      .statusbar .who small { color: var(--red); font-weight: 700; margin-left: 4px; }
+      .statusbar .stat { font-size: 13px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 5px; }
+      .statusbar .stat b { color: var(--ink); font-size: 14px; }
+      .statusbar .spacer { flex: 1; }
+      .mini-bar { width: 92px; height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 14%, transparent); overflow: hidden; }
+      .mini-bar i { display: block; height: 100%; background: var(--hp); border-radius: 99px; transition: width 0.4s ease; }
+      .mini-bar.energy i { background: var(--energy); }
+      .icon-btn {
+        width: 38px; height: 38px; min-height: 38px; padding: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 9px;
+      }
+      .icon-btn svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+      /* ---------- 标题 ---------- */
+      .game-title { text-align: center; margin: 26px 0 4px; }
+      .game-title h1 {
+        font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif;
+        font-size: clamp(46px, 11vw, 74px);
+        margin: 0; line-height: 1.08; letter-spacing: 0.06em; color: var(--ink);
+      }
+      .game-title h1 .seal-char { color: var(--red); }
+      .game-title .sub { color: var(--ink-soft); font-size: 15px; letter-spacing: 0.34em; margin-top: 8px; }
+      .seal {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 6px;
+        background: var(--red); color: #fdf6e3;
+        font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-size: 17px;
+        transform: rotate(-4deg);
+        box-shadow: 0 3px 8px rgba(120, 26, 14, 0.35);
+        vertical-align: middle;
+      }
+      .rule-line { display: flex; align-items: center; gap: 12px; margin: 20px auto; max-width: 420px; color: var(--line-strong); }
+      .rule-line::before, .rule-line::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); opacity: 0.6; }
+
+      h2.section-title { font-size: 22px; margin: 26px 0 6px; font-weight: 900; letter-spacing: 0.05em; }
+      .section-hint { color: var(--ink-soft); font-size: 14px; margin: 0 0 16px; line-height: 1.7; }
+
+      /* ---------- 选将 ---------- */
+      .start-prompt {
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        background: var(--red); color: #fdf6e3;
+        border: 2px solid var(--red-deep); border-radius: 12px;
+        padding: 13px 16px; margin: 0 0 16px;
+        font-size: 19px; font-weight: 900; letter-spacing: 0.08em; text-align: center;
+        box-shadow: 0 6px 18px rgba(120, 26, 14, 0.32);
+        animation: promptPulse 1.6s ease-in-out infinite;
+      }
+      .start-prompt svg { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      @keyframes promptPulse { 0%, 100% { transform: none; } 50% { transform: translateY(2px); } }
+      @media (prefers-reduced-motion: reduce) { .start-prompt { animation: none; } }
+      .hero-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      @media (max-width: 620px) { .hero-grid { grid-template-columns: 1fr; } }
+      .hero-card {
+        text-align: left; font-family: inherit; cursor: pointer; width: 100%;
+        background: var(--card); border: 2px solid var(--line-strong);
+        border-radius: 16px; padding: 18px 16px 14px;
+        box-shadow: 0 4px 14px rgba(74, 54, 18, 0.14);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+        color: var(--ink);
+        -webkit-tap-highlight-color: transparent;
+      }
+      @media (hover: hover) { .hero-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--red); } }
+      .hero-card:active { transform: translateY(2px) scale(0.99); box-shadow: 0 1px 4px rgba(74, 54, 18, 0.22); border-color: var(--red-deep); background: color-mix(in srgb, var(--red) 6%, var(--card)); }
+      .hero-card:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+      .hero-cta {
+        margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 6px;
+        background: var(--red); color: #fdf6e3;
+        border-radius: 9px; padding: 10px 12px;
+        font-size: 15px; font-weight: 900; letter-spacing: 0.22em; text-indent: 0.22em;
+      }
+      .hero-cta svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .hero-card:active .hero-cta { background: var(--red-deep); }
+      .hero-card .portrait {
+        height: 118px; border-radius: 10px; margin-bottom: 12px;
+        display: flex; align-items: flex-end; justify-content: center;
+        position: relative; overflow: hidden;
+        border: 1px solid var(--line);
+      }
+      .hero-card .portrait .big-char {
+        font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-size: 92px; line-height: 0.95;
+        color: rgba(255, 250, 235, 0.92); text-shadow: 0 4px 18px rgba(0,0,0,0.35);
+        transform: translateY(10px);
+      }
+      .hero-card .portrait .faction {
+        position: absolute; top: 8px; left: 8px;
+        background: rgba(20, 12, 4, 0.55); color: #f5e9c8;
+        font-size: 11px; letter-spacing: 0.2em; padding: 3px 8px; border-radius: 5px;
+      }
+      .p-guan { background: linear-gradient(160deg, #7d8a4a 0%, #44512a 55%, #2c3719 100%); }
+      .p-zhao { background: linear-gradient(160deg, #7d94ad 0%, #41597a 55%, #27374e 100%); }
+      .p-zhuge { background: linear-gradient(160deg, #a08b57 0%, #6d5a33 55%, #453820 100%); }
+      .hero-card h3 { margin: 0; font-size: 21px; font-weight: 900; }
+      .hero-card h3 small { font-size: 13px; color: var(--red); margin-left: 6px; letter-spacing: 0.1em; }
+      .hero-card .desc { font-size: 13px; color: var(--ink-soft); line-height: 1.65; margin: 7px 0 10px; min-height: 64px; }
+      .hero-stats { display: flex; gap: 12px; font-size: 13px; border-top: 1px dashed var(--line); padding-top: 10px; }
+      .hero-stats span b { color: var(--red); font-size: 15px; }
+      .hero-skills { margin-top: 10px; display: grid; gap: 6px; }
+      .hero-skills .sk { font-size: 12.5px; background: color-mix(in srgb, var(--gold) 12%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); border-radius: 7px; padding: 5px 9px; line-height: 1.5; }
+      .hero-skills .sk b { color: var(--red-deep); }
+      @media (prefers-color-scheme: dark) { .hero-skills .sk b { color: var(--gold); } }
+
+      .howto {
+        margin-top: 26px; background: var(--paper); border: 1px solid var(--line);
+        border-radius: 14px; padding: 16px 18px;
+      }
+      .howto h3 { margin: 0 0 8px; font-size: 16px; }
+      .howto ol { margin: 0; padding-left: 20px; color: var(--ink-soft); font-size: 13.5px; line-height: 1.85; }
+      .howto b { color: var(--ink); }
+
+      /* ---------- 路线节点 ---------- */
+      .route-track { display: flex; align-items: center; gap: 0; margin: 6px 0 20px; overflow: hidden; }
+      .route-track .dot {
+        flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative;
+        font-size: 10.5px; color: var(--ink-faint);
+      }
+      .route-track .dot::before {
+        content: ""; width: 13px; height: 13px; border-radius: 50%;
+        border: 2px solid var(--line-strong); background: var(--paper); z-index: 1;
+      }
+      .route-track .dot::after {
+        content: ""; position: absolute; top: 6px; left: calc(-50% + 7px); width: calc(100% - 14px);
+        height: 2px; background: var(--line); z-index: 0;
+      }
+      .route-track .dot:first-child::after { display: none; }
+      .route-track .dot.done { color: var(--ink-soft); }
+      .route-track .dot.done::before { background: var(--jade); border-color: var(--jade); }
+      .route-track .dot.now { color: var(--red); font-weight: 700; }
+      .route-track .dot.now::before { background: var(--red); border-color: var(--red-deep); box-shadow: 0 0 0 4px color-mix(in srgb, var(--red) 22%, transparent); }
+      .route-track .dot.boss::before { border-radius: 3px; transform: rotate(45deg); }
+
+      .node-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      @media (max-width: 620px) { .node-grid { grid-template-columns: 1fr; } }
+      .node-card {
+        text-align: left; font-family: inherit; cursor: pointer; color: var(--ink);
+        background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+        padding: 18px 16px; min-height: 148px;
+        display: flex; flex-direction: column; gap: 6px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+      @media (hover: hover) { .node-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--gold); } }
+      .node-card .n-icon {
+        width: 44px; height: 44px; border-radius: 11px;
+        display: flex; align-items: center; justify-content: center;
+        background: color-mix(in srgb, var(--red) 10%, transparent);
+        border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+      }
+      .node-card .n-icon svg { width: 24px; height: 24px; stroke: var(--red); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+      .node-card.elite .n-icon { background: color-mix(in srgb, var(--gold) 14%, transparent); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+      .node-card.elite .n-icon svg { stroke: var(--gold); }
+      .node-card.rest .n-icon { background: color-mix(in srgb, var(--jade) 12%, transparent); border-color: color-mix(in srgb, var(--jade) 40%, transparent); }
+      .node-card.rest .n-icon svg { stroke: var(--jade); }
+      .node-card h3 { margin: 2px 0 0; font-size: 18px; font-weight: 900; }
+      .node-card p { margin: 0; font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+      .node-card .n-tag { margin-top: auto; font-size: 11.5px; letter-spacing: 0.14em; color: var(--ink-faint); }
+
+      /* ---------- 战斗 ---------- */
+      .battle-stage {
+        position: relative;
+        background:
+          radial-gradient(600px 260px at 50% 0%, color-mix(in srgb, var(--red) 12%, transparent), transparent 70%),
+          var(--paper);
+        border: 1px solid var(--line-strong); border-radius: 18px;
+        padding: 20px 18px 16px; overflow: hidden;
+      }
+      .battle-stage.shake { animation: shake 0.32s ease; }
+      @keyframes shake { 0%,100% { transform: none; } 25% { transform: translateX(-5px); } 55% { transform: translateX(5px); } 80% { transform: translateX(-3px); } }
+      @media (prefers-reduced-motion: reduce) { .battle-stage.shake { animation: none; } }
+      .vs-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; }
+      @media (max-width: 560px) { .vs-row { grid-template-columns: 1fr; } .vs-badge { margin: 0 auto; } }
+      .fighter {
+        background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+        position: relative; transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .fighter.hit { animation: hitFlash 0.3s ease; }
+      @keyframes hitFlash { 0% { box-shadow: 0 0 0 3px var(--red-bright); transform: translateX(3px); } 100% { box-shadow: none; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { .fighter.hit { animation: none; } }
+      .fighter .f-head { display: flex; align-items: baseline; gap: 8px; }
+      .fighter .f-name { font-size: 20px; font-weight: 900; }
+      .fighter .f-title { font-size: 12px; color: var(--red); letter-spacing: 0.08em; }
+      .fighter .f-avatar {
+        float: right; font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-size: 44px; line-height: 1;
+        color: var(--ink-faint); opacity: 0.75; margin-left: 8px;
+      }
+      .bar { height: 13px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 13%, transparent); overflow: hidden; margin-top: 10px; position: relative; }
+      .bar i { display: block; height: 100%; border-radius: 99px; transition: width 0.45s ease; }
+      .bar.hp i { background: linear-gradient(90deg, var(--red-deep), var(--hp)); }
+      .bar.en i { background: linear-gradient(90deg, var(--gold-soft), var(--energy)); height: 100%; }
+      .bar.small { height: 9px; margin-top: 6px; }
+      .bar-num { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; display: flex; justify-content: space-between; }
+      .bar-num b { color: var(--ink); }
+      .intent {
+        margin-top: 10px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center;
+        background: color-mix(in srgb, var(--red) 9%, transparent);
+        border: 1px dashed color-mix(in srgb, var(--red) 45%, transparent);
+        color: var(--red-deep); border-radius: 8px; padding: 5px 10px; font-weight: 700;
+      }
+      @media (prefers-color-scheme: dark) { .intent { color: var(--red-bright); } }
+      .intent svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .status-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+      .chip {
+        font-size: 11.5px; padding: 2.5px 8px; border-radius: 99px; font-weight: 700;
+        background: color-mix(in srgb, var(--block) 14%, transparent); color: var(--block);
+        border: 1px solid color-mix(in srgb, var(--block) 40%, transparent);
+      }
+      .chip.bad { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, transparent); }
+      .chip.good { background: color-mix(in srgb, var(--jade) 13%, transparent); color: var(--jade); border-color: color-mix(in srgb, var(--jade) 40%, transparent); }
+      .vs-badge {
+        align-self: center; width: 46px; height: 46px; border-radius: 50%;
+        background: var(--red); color: #fdf6e3; display: flex; align-items: center; justify-content: center;
+        font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-size: 21px; transform: rotate(-5deg);
+        box-shadow: 0 4px 12px rgba(120, 26, 14, 0.4);
+      }
+      .float-dmg {
+        position: absolute; font-weight: 900; font-size: 21px; pointer-events: none; z-index: 5;
+        animation: floatUp 0.9s ease-out forwards; text-shadow: 0 1px 0 var(--paper), 0 0 8px var(--paper);
+      }
+      .float-dmg.hurt { color: var(--red-bright); }
+      .float-dmg.heal { color: var(--jade); }
+      .float-dmg.crit { color: var(--gold); font-size: 27px; }
+      @keyframes floatUp { 0% { opacity: 0; transform: translateY(6px) scale(0.85); } 18% { opacity: 1; transform: translateY(0) scale(1.08); } 100% { opacity: 0; transform: translateY(-42px) scale(1); } }
+      @media (prefers-reduced-motion: reduce) { .float-dmg { animation-duration: 0.01s; } }
+
+      .actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+      @media (max-width: 620px) { .actions { grid-template-columns: repeat(2, 1fr); } }
+      .act-btn {
+        font-family: inherit; cursor: pointer; text-align: left; color: var(--ink);
+        background: var(--card); border: 1px solid var(--line-strong); border-radius: 12px;
+        padding: 11px 13px; min-height: 64px;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+      }
+      @media (hover: hover) { .act-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--red); } }
+      .act-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+      .act-btn .a-name { font-weight: 900; font-size: 15.5px; display: flex; justify-content: space-between; align-items: center; }
+      .act-btn .a-cost { font-size: 11.5px; color: var(--gold); font-weight: 700; white-space: nowrap; margin-left: 6px; }
+      .act-btn .a-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 3px; }
+      .act-btn.ult { border-color: var(--gold); background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 13%, var(--card)), var(--card)); }
+      .act-btn.def { border-color: color-mix(in srgb, var(--block) 55%, var(--line)); }
+
+      .battle-log {
+        margin-top: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+        padding: 12px 14px; height: 132px; overflow-y: auto; overscroll-behavior: contain;
+        font-size: 13.5px; line-height: 1.75; color: var(--ink-soft);
+      }
+      .battle-log .l-you { color: var(--ink); font-weight: 700; }
+      .battle-log .l-bad { color: var(--red); font-weight: 700; }
+      .battle-log .l-good { color: var(--jade); font-weight: 700; }
+      .battle-log .l-sys { color: var(--ink-faint); }
+
+      /* ---------- 奖励 / 事件 / 休整 ---------- */
+      .reward-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      @media (max-width: 620px) { .reward-grid { grid-template-columns: 1fr; } }
+      .reward-card {
+        text-align: left; font-family: inherit; cursor: pointer; color: var(--ink); position: relative;
+        background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+      @media (hover: hover) { .reward-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--gold); } }
+      .reward-card .rarity { font-size: 11px; letter-spacing: 0.22em; font-weight: 700; }
+      .rarity.r-common { color: var(--ink-faint); }
+      .rarity.r-rare { color: var(--block); }
+      .rarity.r-epic { color: var(--red); }
+      .reward-card h3 { margin: 6px 0 4px; font-size: 19px; font-weight: 900; }
+      .reward-card p { margin: 0; font-size: 13.5px; color: var(--ink-soft); line-height: 1.65; }
+      .reward-card .r-icon { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; }
+      .reward-card .r-icon svg { width: 100%; height: 100%; stroke: var(--gold); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+      .event-box, .rest-box {
+        background: var(--paper); border: 1px solid var(--line-strong); border-radius: 18px; padding: 24px 22px;
+      }
+      .event-box .e-title { font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-size: 34px; margin: 0 0 6px; }
+      .event-box .e-text { font-size: 15px; line-height: 1.9; color: var(--ink-soft); margin: 0 0 18px; }
+      .event-box .e-text b { color: var(--ink); }
+      .choice-list { display: grid; gap: 10px; }
+      .choice-btn {
+        font-family: inherit; cursor: pointer; text-align: left; color: var(--ink);
+        background: var(--card); border: 1px solid var(--line-strong); border-radius: 12px; padding: 13px 16px;
+        transition: border-color 0.12s ease, transform 0.12s ease;
+      }
+      @media (hover: hover) { .choice-btn:hover:not(:disabled) { border-color: var(--red); transform: translateX(3px); } }
+      .choice-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+      .choice-btn .c-name { font-weight: 900; font-size: 15.5px; }
+      .choice-btn .c-desc { font-size: 13px; color: var(--ink-soft); margin-top: 2px; line-height: 1.55; }
+      .event-result {
+        margin-top: 16px; border-left: 3px solid var(--gold); padding: 10px 14px;
+        background: color-mix(in srgb, var(--gold) 8%, transparent); border-radius: 0 10px 10px 0;
+        font-size: 14.5px; line-height: 1.8;
+      }
+
+      /* ---------- 宝物栏 ---------- */
+      .relic-shelf { margin-top: 22px; }
+      .relic-shelf h3 { font-size: 15px; margin: 0 0 10px; letter-spacing: 0.06em; }
+      .relic-list { display: flex; flex-wrap: wrap; gap: 8px; }
+      .relic-pill {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: var(--paper); border: 1px solid var(--line-strong); border-radius: 99px;
+        padding: 6px 13px 6px 8px; font-size: 13px; font-weight: 700;
+      }
+      .relic-pill svg { width: 17px; height: 17px; stroke: var(--gold); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+      .relic-pill .cnt { color: var(--red); }
+      .relic-empty { font-size: 13px; color: var(--ink-faint); }
+
+      /* ---------- 结算 ---------- */
+      .end-box { text-align: center; padding: 34px 20px 10px; }
+      .end-box .end-title { font-family: "Kaiti SC", "STKaiti", "KaiTi", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif; font-size: clamp(44px, 10vw, 64px); margin: 10px 0 4px; }
+      .end-box .end-title.win { color: var(--red); }
+      .end-box .end-sub { color: var(--ink-soft); font-size: 15px; line-height: 1.8; max-width: 480px; margin: 0 auto; }
+      .end-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 560px; margin: 24px auto; }
+      @media (max-width: 560px) { .end-stats { grid-template-columns: repeat(2, 1fr); } }
+      .end-stats .es { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px; }
+      .end-stats .es b { display: block; font-size: 24px; font-weight: 900; color: var(--red); }
+      .end-stats .es span { font-size: 12px; color: var(--ink-soft); letter-spacing: 0.1em; }
+      .end-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+      .footer-note { text-align: center; color: var(--ink-faint); font-size: 12px; margin-top: 34px; letter-spacing: 0.14em; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- 状态栏（开局后显示） -->
+      <div class="statusbar hidden" id="statusbar">
+        <span class="who"><span id="sb-hero">关羽</span><small id="sb-title">武圣</small></span>
+        <span class="stat">气血 <span class="mini-bar"><i id="sb-hpbar"></i></span> <b id="sb-hp">120/120</b></span>
+        <span class="stat">战意 <span class="mini-bar energy"><i id="sb-enbar"></i></span> <b id="sb-en">0</b></span>
+        <span class="stat">攻击 <b id="sb-atk">16</b></span>
+        <span class="stat">丹药 <b id="sb-potion">2</b></span>
+        <span class="spacer"></span>
+        <span class="stat">进度 <b id="sb-floor">—</b></span>
+        <button class="btn icon-btn" id="btn-sound" type="button" aria-label="开关音效">
+          <svg viewBox="0 0 24 24" id="sound-icon"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        </button>
+        <button class="btn btn-small" id="btn-restart" type="button">重开一局</button>
+      </div>
+
+      <!-- ① 选将 -->
+      <section class="screen" id="screen-start">
+        <div class="game-title">
+          <h1>三国<span class="seal-char">・</span>乱世行</h1>
+          <div class="sub">肉 鸽 远 征 <span class="seal">印</span></div>
+        </div>
+        <div class="rule-line"><span class="brush" style="font-size:19px;">择一将，闯十二关</span></div>
+        <h2 class="section-title">点将</h2>
+        <p class="section-hint">三位名将，三种打法。选定主将后将踏上随机征途：每一关的路线都由你亲手选，胜负只在这一局之内——阵亡即重头来过，宝物与成长也只属于这一局。</p>
+        <div class="start-prompt" role="note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10l7 7 7-7"/></svg><span>点击一位武将，开始出征</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10l7 7 7-7"/></svg></div>
+        <div class="hero-grid" id="hero-grid"></div>
+        <div class="howto">
+          <h3>玩法简述</h3>
+          <ol>
+            <li><b>行军：</b>共 12 关，每关从 3 条路线中择一：普通战、精英战、奇遇、宝箱、休整，第 12 关决战董卓。</li>
+            <li><b>战斗：</b>回合制。普攻积攒「战意」，战意足够即可释放技能；敌将的下一步行动会提前写明，防御可获得格挡抵挡伤害。</li>
+            <li><b>成长：</b>每胜一场，三选一领取宝物或增益，层层叠加，构筑你这一局的流派。</li>
+            <li><b>休整：</b>营地可回血，或淬炼一件宝物令其效果翻倍。</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ② 行军地图 -->
+      <section class="screen hidden" id="screen-map">
+        <h2 class="section-title" id="map-title">行军途中</h2>
+        <p class="section-hint" id="map-hint">选择下一关的去向。</p>
+        <div class="route-track" id="route-track"></div>
+        <div class="node-grid" id="node-grid"></div>
+        <div class="relic-shelf" id="relic-shelf-map"></div>
+      </section>
+
+      <!-- ③ 战斗 -->
+      <section class="screen hidden" id="screen-battle">
+        <h2 class="section-title" id="battle-title">遭遇敌军</h2>
+        <p class="section-hint" id="battle-hint"></p>
+        <div class="battle-stage" id="battle-stage">
+          <div class="vs-row">
+            <div class="fighter" id="card-player">
+              <span class="f-avatar brush" id="p-avatar">关</span>
+              <div class="f-head"><span class="f-name" id="p-name">关羽</span><span class="f-title" id="p-title">武圣</span></div>
+              <div class="bar hp"><i id="p-hpbar"></i></div>
+              <div class="bar-num"><span>气血 <b id="p-hp">120 / 120</b></span><span id="p-block-num"></span></div>
+              <div class="bar small en"><i id="p-enbar"></i></div>
+              <div class="bar-num"><span>战意 <b id="p-en">0 / 100</b></span><span>攻击 <b id="p-atk">16</b></span></div>
+              <div class="status-chips" id="p-chips"></div>
+            </div>
+            <div class="vs-badge brush">战</div>
+            <div class="fighter" id="card-enemy">
+              <span class="f-avatar brush" id="e-avatar">贼</span>
+              <div class="f-head"><span class="f-name" id="e-name">黄巾贼</span><span class="f-title" id="e-title">普通</span></div>
+              <div class="bar hp"><i id="e-hpbar"></i></div>
+              <div class="bar-num"><span>气血 <b id="e-hp">40 / 40</b></span><span id="e-block-num"></span></div>
+              <div><span class="intent" id="e-intent"></span></div>
+              <div class="status-chips" id="e-chips"></div>
+            </div>
+          </div>
+          <div class="actions" id="battle-actions"></div>
+        </div>
+        <div class="battle-log" id="battle-log" aria-live="polite"></div>
+        <div class="relic-shelf" id="relic-shelf-battle"></div>
+      </section>
+
+      <!-- ④ 战后奖励 -->
+      <section class="screen hidden" id="screen-reward">
+        <h2 class="section-title">凯旋 · 三选其一</h2>
+        <p class="section-hint" id="reward-hint">缴获的战利品只能带走一件，慎选。</p>
+        <div class="reward-grid" id="reward-grid"></div>
+      </section>
+
+      <!-- ⑤ 奇遇 -->
+      <section class="screen hidden" id="screen-event">
+        <div class="event-box">
+          <h2 class="e-title brush" id="event-title">奇遇</h2>
+          <p class="e-text" id="event-text"></p>
+          <div class="choice-list" id="event-choices"></div>
+          <div class="event-result hidden" id="event-result"></div>
+          <div style="margin-top:18px;" class="hidden" id="event-continue-wrap">
+            <button class="btn btn-primary" id="btn-event-continue" type="button">继续行军</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑥ 休整 -->
+      <section class="screen hidden" id="screen-rest">
+        <div class="rest-box event-box">
+          <h2 class="e-title brush">营地休整</h2>
+          <p class="e-text">大军在一处背风的山坳扎下营盘。炊烟升起，军医正熬着汤药，铁匠的炉火也未熄。今夜只能做一件事。</p>
+          <div class="choice-list" id="rest-choices"></div>
+          <div class="event-result hidden" id="rest-result"></div>
+          <div style="margin-top:18px;" class="hidden" id="rest-continue-wrap">
+            <button class="btn btn-primary" id="btn-rest-continue" type="button">拔营出发</button>
+          </div>
+        </div>
+        <div class="relic-shelf" id="relic-shelf-rest"></div>
+      </section>
+
+      <!-- ⑦ 结算 -->
+      <section class="screen hidden" id="screen-end">
+        <div class="end-box">
+          <span class="seal" style="width:40px;height:40px;font-size:22px;" id="end-seal">胜</span>
+          <div class="end-title brush" id="end-title">天下归一</div>
+          <p class="end-sub" id="end-sub"></p>
+          <div class="end-stats" id="end-stats"></div>
+          <div class="relic-shelf" id="relic-shelf-end" style="text-align:left;max-width:560px;margin-left:auto;margin-right:auto;"></div>
+          <div class="end-actions">
+            <button class="btn btn-primary" id="btn-again" type="button">再战一局</button>
+            <button class="btn" id="btn-change-hero" type="button">更换主将</button>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer-note">乱 世 行 · 一 局 一 天 下</p>
+    </div>
+
+    <script>
+    "use strict";
+    /* ================= 工具 ================= */
+    function $(id) { return document.getElementById(id); }
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function randi(a, b) { return Math.floor(rand(a, b + 1)); }
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function shuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+      return a;
+    }
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    /* ================= 音效（WebAudio 小合成，可关） ================= */
+    var soundOn = true, audioCtx = null;
+    function tone(freq, dur, type, vol, when) {
+      if (!soundOn) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        var t = audioCtx.currentTime + (when || 0);
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = type || "triangle"; o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(vol || 0.08, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      } catch (e) { /* 无音频环境则静默 */ }
+    }
+    function sfx(name) {
+      if (name === "hit") { tone(180, 0.12, "square", 0.05); tone(90, 0.16, "triangle", 0.07, 0.02); }
+      else if (name === "crit") { tone(520, 0.1, "square", 0.06); tone(180, 0.2, "sawtooth", 0.06, 0.03); }
+      else if (name === "hurt") { tone(120, 0.18, "sawtooth", 0.06); }
+      else if (name === "block") { tone(300, 0.1, "triangle", 0.06); tone(420, 0.1, "triangle", 0.05, 0.05); }
+      else if (name === "heal") { tone(520, 0.14, "sine", 0.06); tone(660, 0.16, "sine", 0.06, 0.09); tone(780, 0.2, "sine", 0.05, 0.18); }
+      else if (name === "win") { [392, 523, 659, 784].forEach(function (f, i) { tone(f, 0.22, "triangle", 0.07, i * 0.11); }); }
+      else if (name === "lose") { [330, 262, 196, 147].forEach(function (f, i) { tone(f, 0.3, "triangle", 0.07, i * 0.16); }); }
+      else if (name === "pick") { tone(660, 0.09, "sine", 0.05); tone(880, 0.12, "sine", 0.05, 0.06); }
+    }
+
+    /* ================= 图标（内联 SVG） ================= */
+    var ICONS = {
+      sword: '<svg viewBox="0 0 24 24"><path d="M4 20l3-1 9.5-9.5a2.1 2.1 0 0 0-3-3L4 16l-1 3z"/><path d="M13.5 6.5l3 3"/><path d="M3 21l2.5-2.5"/></svg>',
+      spear: '<svg viewBox="0 0 24 24"><path d="M5 19L17 7"/><path d="M17 3l4-1-1 4-3.5 3.5L14 7z"/><path d="M4 20l1.5-4L8 18.5z"/></svg>',
+      shield: '<svg viewBox="0 0 24 24"><path d="M12 3l7 2.5V11c0 4.8-3 8.2-7 10-4-1.8-7-5.2-7-10V5.5z"/><path d="M12 7v8"/></svg>',
+      flame: '<svg viewBox="0 0 24 24"><path d="M12 3c1 3-2 4.5-2 7a4.5 4.5 0 0 0 9 0c0-2-1-3.5-2-5-.3 1.2-1 2-2 2.5C14.5 6 13.5 4 12 3z"/><path d="M9.5 13.5A4.5 4.5 0 0 0 12 21a4.5 4.5 0 0 0 4.5-4.5"/></svg>',
+      star: '<svg viewBox="0 0 24 24"><path d="M12 3.5l2.5 5.4 5.9.7-4.3 4 1.1 5.8L12 16.6l-5.2 2.8 1.1-5.8-4.3-4 5.9-.7z"/></svg>',
+      horse: '<svg viewBox="0 0 24 24"><path d="M4 20c2-1 3-2.5 3.5-4.5L9 10l3-5 3 1 1 4 4 2-1 3-4-1-1.5 3c-2.5 2-6 3-9.5 3z"/><circle cx="15.5" cy="5" r="0.6"/></svg>',
+      book: '<svg viewBox="0 0 24 24"><path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5z"/><path d="M5 4v16"/><path d="M9 8h6M9 12h6"/></svg>',
+      gem: '<svg viewBox="0 0 24 24"><path d="M7 4h10l3 5-8 11L4 9z"/><path d="M4 9h16M12 20L9 9l3-5 3 5z"/></svg>',
+      potion: '<svg viewBox="0 0 24 24"><path d="M10 3h4M10 3v5l-4.5 7A3.5 3.5 0 0 0 8.5 21h7a3.5 3.5 0 0 0 3-5.5L14 8V3"/><path d="M7.5 14h9"/></svg>',
+      flag: '<svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg>',
+      tent: '<svg viewBox="0 0 24 24"><path d="M12 4L2.5 20h19z"/><path d="M12 12l-3.5 8h7z"/></svg>',
+      chest: '<svg viewBox="0 0 24 24"><path d="M4 10a8 6 0 0 1 16 0v9H4z"/><path d="M4 14h16M12 12v4"/><circle cx="12" cy="16.5" r="1"/></svg>',
+      scroll: '<svg viewBox="0 0 24 24"><path d="M7 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7"/><path d="M7 4a2 2 0 0 0-2 2v1h4"/><path d="M7 20a2 2 0 0 1-2-2v-1h4"/><path d="M11 9h5M11 13h5"/></svg>',
+      moon: '<svg viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>',
+      crown: '<svg viewBox="0 0 24 24"><path d="M3 18h18M4 18l-1-9 5.5 4L12 5l3.5 8L21 9l-1 9z"/></svg>',
+      heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13 3.5 9.6A4.6 4.6 0 0 1 12 6.7a4.6 4.6 0 0 1 8.5 2.9c0 3.4-2.5 6.9-8.5 10.9z"/></svg>',
+      bolt: '<svg viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11L9.5 22 19 10h-6.5z"/></svg>',
+      fan: '<svg viewBox="0 0 24 24"><path d="M12 21L3 8a13 13 0 0 1 18 0z"/><path d="M12 21V9M12 21L6.5 10.5M12 21l5.5-10.5"/></svg>',
+      bow: '<svg viewBox="0 0 24 24"><path d="M6 3a13 13 0 0 0 0 18"/><path d="M6 3v18"/><path d="M6 12h13M16 9l3 3-3 3"/></svg>'
+    };
+    function icon(name) { return ICONS[name] || ICONS.sword; }
+
+    /* ================= 数据：主将 ================= */
+    var HEROES = [
+      {
+        id: "guanyu", name: "关羽", title: "武圣", avatar: "关", cls: "p-guan", faction: "蜀 汉",
+        hp: 118, atk: 16, desc: "青龙偃月，义薄云天。攻击高、血量厚，技能爆发凶悍，适合正面碾压的打法。",
+        skills: [
+          { id: "gy_a", name: "青龙斩", cost: 30, mult: 1.9, hits: 1, desc: "造成 190% 攻击的伤害" },
+          { id: "gy_b", name: "武圣降临", cost: 60, mult: 2.9, hits: 1, healPct: 0.12, desc: "造成 290% 伤害，并回复 12% 气血", ult: true }
+        ]
+      },
+      {
+        id: "zhaoyun", name: "赵云", title: "常山龙胆", avatar: "赵", cls: "p-zhao", faction: "蜀 汉",
+        hp: 104, atk: 14, desc: "一身是胆，七进七出。多段攻击更容易触发暴击与宝物效果，身法灵动，自带 10% 闪避。",
+        dodge: 0.10,
+        skills: [
+          { id: "zy_a", name: "银枪连刺", cost: 30, mult: 0.95, hits: 2, desc: "连续 2 击，每击 95% 攻击" },
+          { id: "zy_b", name: "七进七出", cost: 60, mult: 0.72, hits: 4, desc: "连续 4 击，每击 72% 攻击", ult: true }
+          ]
+      },
+      {
+        id: "zhugeliang", name: "诸葛亮", title: "卧龙", avatar: "葛", cls: "p-zhuge", faction: "蜀 汉",
+        hp: 92, atk: 13, desc: "羽扇纶巾，算无遗策。火计灼烧、八阵削敌，战意积攒更快，以谋略磨死强敌。",
+        energyBonus: 6,
+        skills: [
+          { id: "zg_a", name: "火计", cost: 30, mult: 1.5, hits: 1, burn: 2, desc: "150% 伤害，并点燃敌军 2 回合" },
+          { id: "zg_b", name: "八阵图", cost: 60, mult: 2.0, hits: 1, weaken: 2, desc: "200% 伤害，敌军虚弱 2 回合（攻击 -35%）", ult: true }
+        ]
+      }
+    ];
+
+    /* ================= 数据：敌将池 ================= */
+    var ENEMIES_NORMAL = [
+      { name: "黄巾贼首", title: "黄巾军", avatar: "巾", hp: 46, atk: 8 },
+      { name: "西凉悍卒", title: "西凉军", avatar: "凉", hp: 54, atk: 9 },
+      { name: "虎豹骑兵", title: "曹魏精锐", avatar: "豹", hp: 50, atk: 10 },
+      { name: "江东弓兵", title: "东吴水师", avatar: "弓", hp: 42, atk: 11 },
+      { name: "山越蛮将", title: "山越部族", avatar: "越", hp: 58, atk: 8 },
+      { name: "白马义从", title: "幽州骑兵", avatar: "马", hp: 48, atk: 10 }
+    ];
+    var ENEMIES_ELITE = [
+      { name: "华雄", title: "西凉猛将", avatar: "华", hp: 96, atk: 13 },
+      { name: "颜良", title: "河北名将", avatar: "颜", hp: 104, atk: 14 },
+      { name: "夏侯惇", title: "独目苍狼", avatar: "惇", hp: 110, atk: 13 },
+      { name: "甘宁", title: "锦帆贼", avatar: "甘", hp: 92, atk: 15 }
+    ];
+    var BOSS = { name: "董卓", title: "权倾朝野 · 最终决战", avatar: "卓", hp: 235, atk: 16, boss: true };
+
+    /* ================= 数据：宝物池 ================= */
+    /* apply(G) 在获得时结算数值型加成；其余效果在战斗中按标记读取 */
+    var RELICS = [
+      { id: "qinggang", name: "青釭剑", icon: "sword", rarity: "rare", desc: "攻击 +5。", apply: function (G) { G.player.atk += 5; } },
+      { id: "fangtian", name: "方天画戟", icon: "spear", rarity: "epic", desc: "攻击 +4，暴击率 +10%。", apply: function (G) { G.player.atk += 4; G.player.crit += 0.10; } },
+      { id: "chitu", name: "赤兔马", icon: "horse", rarity: "rare", desc: "每场战斗首击必定暴击。", flag: "firstCrit" },
+      { id: "dilu", name: "的卢马", icon: "horse", rarity: "rare", desc: "闪避率 +10%。", apply: function (G) { G.player.dodge += 0.10; } },
+      { id: "hufu", name: "虎符", icon: "flag", rarity: "rare", desc: "气血上限 +25，并立即回复 25。", apply: function (G) { G.player.maxHp += 25; healPlayer(G, 25, true); } },
+      { id: "bingfa", name: "孟德新书", icon: "book", rarity: "epic", desc: "技能伤害 +30%。", flag: "skillDmg" },
+      { id: "lianhuan", name: "连环计", icon: "scroll", rarity: "rare", desc: "暴击率 +12%。", apply: function (G) { G.player.crit += 0.12; } },
+      { id: "kongcheng", name: "空城计", icon: "fan", rarity: "rare", desc: "防御获得的格挡 +6。", flag: "blockPlus" },
+      { id: "tuntian", name: "屯田令", icon: "scroll", rarity: "common", desc: "每胜一场，回复 10 点气血。", flag: "postHeal" },
+      { id: "yushan", name: "卧龙羽扇", icon: "fan", rarity: "epic", desc: "每次行动额外获得 6 点战意。", flag: "energyPlus" },
+      { id: "jinnang", name: "锦囊妙计", icon: "potion", rarity: "common", desc: "丹药 +2。", apply: function (G) { G.player.potions += 2; } },
+      { id: "yuxi", name: "传国玉玺", icon: "gem", rarity: "epic", desc: "气血上限 +15，攻击 +3，暴击伤害提升。", apply: function (G) { G.player.maxHp += 15; G.player.hp += 15; G.player.atk += 3; G.player.critDmg += 0.4; } },
+      { id: "taoyuan", name: "桃园结义", icon: "heart", rarity: "rare", desc: "气血上限 +18，并回复 18。", apply: function (G) { G.player.maxHp += 18; healPlayer(G, 18, true); } },
+      { id: "gongbu", name: "强弓营", icon: "bow", rarity: "common", desc: "普攻伤害 +25%。", flag: "basicDmg" },
+      { id: "jinjia", name: "明光铠", icon: "shield", rarity: "rare", desc: "受到的伤害 -12%。", flag: "armor" },
+      { id: "shenyi", name: "神医手札", icon: "book", rarity: "common", desc: "丹药效果翻倍（回复 50%）。", flag: "potionPlus" }
+    ];
+    var RARITY_NAME = { common: "凡 品", rare: "珍 品", epic: "绝 世" };
+
+    /* ================= 数据：奇遇 ================= */
+    var EVENTS = [
+      {
+        title: "华容道", text: "败军之际，前方华容小道传来马蹄声——一支<b>残兵</b>护着粮车仓皇而过。拦下他们，或许能补给军需；放他们一条生路，也许日后另有回报。",
+        choices: [
+          { name: "拦路劫粮", desc: "获得补给：丹药 +1，回复 15 点气血（有风险）", run: function (G) {
+              G.player.potions += 1;
+              if (Math.random() < 0.3) { damagePlayerRaw(G, 10); return "残兵拼死反扑，我军虽夺下粮车，却也折损了些人马：<b>气血 -10</b>，丹药 +1。"; }
+              healPlayer(G, 15, true); return "粮车尽数归我所有。将士们饱餐一顿：<b>丹药 +1，气血 +15</b>。";
+            } },
+          { name: "放其生路", desc: "结一份善缘：随机获得一件宝物", run: function (G) { var r = grantRandomRelic(G); return "残兵首领跪谢而去，临行留下一件旧物——竟是<b>「" + r + "」</b>！"; } }
+        ]
+      },
+      {
+        title: "三顾茅庐", text: "行军至隆中，山间有一草庐。庐中隐士抚琴长啸，言谈间对天下大势了如指掌。只是他生性孤傲，<b>未必肯出山</b>。",
+        choices: [
+          { name: "三顾求贤（气血 -8）", desc: "耗费心力拜访，七成把握请得高人指点", needs: function (G) { return G.player.hp > 8; }, run: function (G) {
+              damagePlayerRaw(G, 8);
+              if (Math.random() < 0.7) { G.player.atk += 4; return "隐士被诚意打动，授你兵法要诀：<b>攻击 +4</b>。这一趟奔波，值了。"; }
+              return "隐士避而不见，只留下一句「缘分未到」。白白耗了些气力。";
+            } },
+          { name: "绕道而行", desc: "不耽误行程，小幅回复气血", run: function (G) { healPlayer(G, 10, true); return "山间清泉甘冽，将士们休整片刻：<b>气血 +10</b>。"; } }
+        ]
+      },
+      {
+        title: "草船借箭", text: "江面大雾弥漫，敌军水寨灯火隐约可见。军师献策：扎草人于船上，擂鼓呐喊，<b>借敌军之箭</b>充作军资——只是雾散之前，必须全身而退。",
+        choices: [
+          { name: "擂鼓借箭", desc: "成败各半：成功攻击 +5，失败气血 -14", run: function (G) {
+              if (Math.random() < 0.55) { G.player.atk += 5; return "万箭如雨，尽数钉在草人之上！缴获箭矢无数，弓弩手战力大增：<b>攻击 +5</b>。"; }
+              damagePlayerRaw(G, 14); return "雾散得太早，敌军追兵杀到，我军仓皇撤退：<b>气血 -14</b>。";
+            } },
+          { name: "稳守大营", desc: "什么都不做，继续行军", run: function (G) { return "你摇头否了此计。大军稳守营盘，无功无过。"; } }
+        ]
+      },
+      {
+        title: "煮酒论英雄", text: "途经一处酒肆，老掌柜端上温好的青梅酒，眯眼笑道：「客官气度不凡。老朽这坛<b>二十年的陈酿</b>，只赠有缘人——敢不敢与老朽对饮三碗，论一论天下英雄？」",
+        choices: [
+          { name: "对饮论英雄", desc: "豪情激荡：暴击率 +8%，但可能醉酒（气血 -8）", run: function (G) {
+              G.player.crit += 0.08;
+              if (Math.random() < 0.35) { damagePlayerRaw(G, 8); return "三碗下肚，天旋地转，吐了一路：<b>气血 -8</b>。不过酒壮英雄胆：<b>暴击率 +8%</b>。"; }
+              return "酒逢知己，你谈笑间指点江山，豪气冲霄：<b>暴击率 +8%</b>。";
+            } },
+          { name: "谢绝好意", desc: "回复 12 点气血", run: function (G) { healPlayer(G, 12, true); return "你只讨了碗热汤面，吃得浑身暖和：<b>气血 +12</b>。"; } }
+        ]
+      },
+      {
+        title: "单刀赴会", text: "前方关隘设下宴席，守将派人来请：「我家将军备了薄酒，只请您<b>单刀赴会</b>。」席间刀斧手林立，这杯酒，喝还是不喝？",
+        choices: [
+          { name: "单刀赴会", desc: "胆气过人：随机淬炼一件已有宝物（效果翻倍）", needs: function (G) { return G.relics.length > 0; }, run: function (G) {
+              var msg = upgradeRandomRelic(G);
+              return "你提刀赴宴，谈笑自若，满座皆惊。归途中心有所悟：" + msg;
+            } },
+          { name: "推说军务", desc: "稳妥为上：丹药 +1", run: function (G) { G.player.potions += 1; return "你婉言谢绝，顺手从驿站讨了些伤药：<b>丹药 +1</b>。"; } }
+        ]
+      },
+      {
+        title: "老兵的地图", text: "一位断臂老兵拦住队伍，献上一卷羊皮地图，说是他年轻时走过的<b>近路</b>，能直插敌后。地图边缘已经焦黑，字迹半残——信，还是不信？",
+        choices: [
+          { name: "走近路", desc: "抄近道赶路：跳过普通行军的疲惫，回复 18 气血；三成概率遇伏（气血 -12）", run: function (G) {
+              if (Math.random() < 0.3) { damagePlayerRaw(G, 12); return "近路尽头竟有伏兵！好在反应及时，杀出重围：<b>气血 -12</b>。"; }
+              healPlayer(G, 18, true); return "近路平坦无事，大军提前扎营歇脚：<b>气血 +18</b>。";
+            } },
+          { name: "走大路", desc: "攻击 +2（沿途操练）", run: function (G) { G.player.atk += 2; return "大军沿官道操练行进，军容愈发齐整：<b>攻击 +2</b>。"; } }
+        ]
+      }
+    ];
+
+    /* ================= 游戏状态 ================= */
+    var TOTAL_FLOORS = 12;
+    var G = null;
+
+    function newGame(hero) {
+      G = {
+        hero: hero,
+        floor: 0,
+        player: {
+          hp: hero.hp, maxHp: hero.hp, atk: hero.atk,
+          energy: 0, block: 0, potions: 2,
+          crit: 0.10, critDmg: 1.6,
+          dodge: hero.dodge || 0
+        },
+        relics: [],          // {relic, count}
+        kills: 0, elites: 0, battles: 0,
+        battle: null,
+        startedAt: Date.now(),
+        over: false
+      };
+    }
+    function hasRelic(id) {
+      for (var i = 0; i < G.relics.length; i++) if (G.relics[i].relic.id === id) return G.relics[i];
+      return null;
+    }
+    function relicCount(id) { var r = hasRelic(id); return r ? r.count : 0; }
+    function healPlayer(Gref, amount, silent) {
+      var before = Gref.player.hp;
+      Gref.player.hp = clamp(Gref.player.hp + amount, 0, Gref.player.maxHp);
+      return Gref.player.hp - before;
+    }
+    function damagePlayerRaw(Gref, amount) {
+      Gref.player.hp = clamp(Gref.player.hp - amount, 0, Gref.player.maxHp);
+    }
+    function grantRelic(relic) {
+      var ex = hasRelic(relic.id);
+      if (ex) ex.count += 1; else G.relics.push({ relic: relic, count: 1 });
+      if (relic.apply) relic.apply(G);
+      return relic.name;
+    }
+    function grantRandomRelic(Gref) {
+      var pool = RELICS.filter(function (r) { return r.id !== "jinnang" || true; });
+      return grantRelic(pick(pool));
+    }
+    function upgradeRandomRelic(Gref) {
+      var entry = pick(Gref.relics);
+      entry.count += 1;
+      if (entry.relic.apply) entry.relic.apply(Gref);
+      return "「" + entry.relic.name + "」得到淬炼，<b>效果翻倍</b>（现有 " + entry.count + " 重）。";
+    }
+
+/* ================= 界面切换 ================= */
+var SCREENS = ["screen-start", "screen-map", "screen-battle", "screen-reward", "screen-event", "screen-rest", "screen-end"];
+function showScreen(id) {
+SCREENS.forEach(function (s) { $(s).classList.toggle("hidden", s!== id);});
+window.scrollTo({ top: 0, behavior: "smooth"});
+}
+function updateStatusbar() {
+if (!G) { $("statusbar").classList.add("hidden"); return;}
+$("statusbar").classList.remove("hidden");
+$("sb-hero").textContent = G.hero.name;
+$("sb-title").textContent = G.hero.title;
+$("sb-hp").textContent = Math.ceil(G.player.hp) + "/" + G.player.maxHp;
+$("sb-hpbar").style.width = clamp(G.player.hp / G.player.maxHp * 100, 0, 100) + "%";
+$("sb-en").textContent = Math.floor(G.player.energy);
+$("sb-enbar").style.width = clamp(G.player.energy, 0, 100) + "%";
+$("sb-atk").textContent = G.player.atk;
+$("sb-potion").textContent = G.player.potions;
+$("sb-floor").textContent = G.over ? "终局" : (G.floor >= 1 ? ("第 " + G.floor + " / " + TOTAL_FLOORS + " 关") : "点将中");
+}
+function renderRelics(elId) {
+var el = $(elId); if (!el) return;
+if (!G || G.relics.length === 0) {
+el.innerHTML = '<h3>随身宝物</h3><span class="relic-empty">尚未获得宝物——打赢战斗即可三选其一。</span>';
+return;
+}
+var html = "<h3>随身宝物</h3><div class='relic-list'>";
+G.relics.forEach(function (entry) {
+html += '<span class="relic-pill" title="' + entry.relic.desc.replace(/"/g, "") + '">' + icon(entry.relic.icon) + entry.relic.name +
+(entry.count > 1? ' <span class="cnt">×' + entry.count + "</span>": "") + "</span>";
+});
+el.innerHTML = html + "</div>";
+}
+
+/* ================= 选将 ================= */
+function renderHeroes() {
+var grid = $("hero-grid");
+grid.innerHTML = "";
+HEROES.forEach(function (hero) {
+var card = document.createElement("button");
+card.type = "button"; card.className = "hero-card";
+var skillsHtml = hero.skills.map(function (s) {
+return '<div class="sk"><b>' + s.name + '</b>（战意 ' + s.cost + '）' + s.desc + "</div>";
+}).join("");
+card.innerHTML =
+'<div class="portrait ' + hero.cls + '"><span class="faction">' + hero.faction + '</span><span class="big-char brush">' + hero.avatar + '</span></div>' +
+"<h3>" + hero.name + "<small>" + hero.title + "</small></h3>" +
+'<p class="desc">' + hero.desc + "</p>" +
+'<div class="hero-stats"><span>气血 <b>' + hero.hp + '</b></span><span>攻击 <b>' + hero.atk + '</b></span><span>丹药 <b>2</b></span></div>' +
+'<div class="hero-skills">' + skillsHtml + "</div>" +
+'<div class="hero-cta">点击出征<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>';
+card.addEventListener("click", function () {
+sfx("pick");
+newGame(hero);
+updateStatusbar();
+nextFloor();
+});
+grid.appendChild(card);
+});
+}
+
+/* ================= 路线生成 ================= */
+var NODE_INFO = {
+battle: { name: "遭遇战", icon: "sword", tag: "普 通 战 斗", desc: "前方出现一支敌军，兵力寻常。取胜后可三选一领取战利品。"},
+elite: { name: "强敌压境", icon: "crown", tag: "精 英 战 斗", desc: "敌方名将亲自压阵，凶险倍增——但奖励必出一件珍品以上宝物。", cls: "elite"},
+event: { name: "途中奇遇", icon: "scroll", tag: "随 机 事 件", desc: "行军路上总有意想不到的人和事。是福是祸，临场决断。"},
+treasure: { name: "无主宝箱", icon: "chest", tag: "直 接 领 奖", desc: "道旁遗落一只沉甸甸的宝箱，不用打仗，白捡一件宝物。"},
+rest: { name: "营地休整", icon: "tent", tag: "回 血 / 淬 炼", desc: "扎营休整一夜：回复气血，或淬炼一件宝物令其效果翻倍。", cls: "rest"},
+boss: { name: "决战洛阳", icon: "flame", tag: "最 终 B O S S", desc: "董卓盘踞洛阳，挟天子以令诸侯。此战定鼎天下，只许胜，不许败。", cls: "elite"}
+};
+function genNodeOptions(floor) {
+if (floor === TOTAL_FLOORS) return ["boss"];
+if (floor === 5 || floor === 10) {
+return shuffle(["rest", pick(["battle", "event"]), pick(["elite", "treasure", "battle"])]).slice(0, 3);
+}
+var pool = ["battle", "battle", "battle", "event", "event", "treasure"];
+if (floor >= 3) pool.push("elite", "elite");
+if (floor >= 7) pool.push("elite");
+var opts = [], guard = 0;
+while (opts.length < 3 && guard++ < 60) {
+var t = pick(pool);
+if (opts.indexOf(t) === -1 || t === "battle") { if (opts.indexOf(t) === -1) opts.push(t);}
+}
+if (opts.indexOf("battle") === -1 && opts.indexOf("elite") === -1) opts[0] = "battle";
+return opts.slice(0, 3);
+}
+function renderRouteTrack() {
+var track = $("route-track");
+var html = "";
+for (var i = 1; i <= TOTAL_FLOORS; i++) {
+var cls = "dot";
+if (i < G.floor) cls += " done";
+if (i === G.floor) cls += " now";
+if (i === TOTAL_FLOORS) cls += " boss";
+var label = i === TOTAL_FLOORS? "决战": (i === 5 || i === 10? "休整": "第" + i + "关");
+html += '<div class="' + cls + '"><span>' + label + "</span></div>";
+}
+track.innerHTML = html;
+}
+function nextFloor() {
+G.floor += 1;
+if (G.floor > TOTAL_FLOORS) { endGame(true); return;}
+var opts = genNodeOptions(G.floor);
+$("map-title").textContent = G.floor === TOTAL_FLOORS? "最终决战": ("第 " + G.floor + " 关 · 行军");
+$("map-hint").textContent = G.floor === TOTAL_FLOORS? "洛阳城下，董卓的大军已列阵相迎。": "斥候来报，前方有 " + opts.length + " 条路可走。选一条，继续向洛阳进发。";
+renderRouteTrack();
+var grid = $("node-grid");
+grid.innerHTML = "";
+opts.forEach(function (type) {
+var info = NODE_INFO[type];
+var card = document.createElement("button");
+card.type = "button";
+card.className = "node-card" + (info.cls? " " + info.cls: "");
+card.innerHTML = '<span class="n-icon">' + icon(info.icon) + "</span><h3>" + info.name + '</h3><p>' + info.desc + '</p><span class="n-tag">' + info.tag + "</span>";
+card.addEventListener("click", function () { sfx("pick"); enterNode(type);});
+grid.appendChild(card);
+});
+renderRelics("relic-shelf-map");
+updateStatusbar();
+showScreen("screen-map");
+}
+function enterNode(type) {
+if (type === "battle") startBattle("normal");
+else if (type === "elite") startBattle("elite");
+else if (type === "boss") startBattle("boss");
+else if (type === "event") startEvent();
+else if (type === "treasure") showReward(true);
+else if (type === "rest") startRest();
+}
+
+/* ================= 战斗 ================= */
+function scaleEnemy(base, kind) {
+var f = G.floor;
+var hpMul = 1 + (f - 1) * 0.17, atkMul = 1 + (f - 1) * 0.10;
+if (kind === "elite") { hpMul *= 1.15; atkMul *= 1.05;}
+return {
+name: base.name, title: base.title, avatar: base.avatar, boss:!!base.boss,
+maxHp: Math.round(base.hp * hpMul), hp: Math.round(base.hp * hpMul),
+atk: Math.round(base.atk * atkMul), block: 0,
+burn: 0, weaken: 0, atkBuff: 0, intent: null, enraged: false
+};
+}
+function startBattle(kind) {
+var base = kind === "boss"? BOSS: (kind === "elite"? pick(ENEMIES_ELITE): pick(ENEMIES_NORMAL));
+var enemy = scaleEnemy(base, kind);
+G.battle = {
+kind: kind, enemy: enemy, turn: 1, busy: false,
+firstStrike: true, logEl: $("battle-log")
+};
+G.player.block = 0;
+G.battles += 1;
+$("battle-title").textContent = kind === "boss"? "决战 · 董卓": (kind === "elite"? "精英战 · " + enemy.name: "遭遇战 · " + enemy.name);
+$("battle-hint").textContent = kind === "boss"? "洛阳城下，吕布虽不在，董卓亲率西凉铁骑迎战。拿下此贼，天下可定。":
+(kind === "elite"? "对方是成名已久的猛将，小觑不得。留意他每一步的意图。": "敌军已发现我方行踪，避无可避，接战！");
+$("battle-log").innerHTML = "";
+logLine("sys", "—— 第 " + G.floor + " 关 · 与「" + enemy.name + "」交战 ——");
+rollIntent();
+renderBattle();
+renderRelics("relic-shelf-battle");
+showScreen("screen-battle");
+}
+function logLine(cls, text) {
+var el = G.battle? G.battle.logEl: $("battle-log");
+var div = document.createElement("div");
+div.className = "l-" + cls;
+div.innerHTML = text;
+el.appendChild(div);
+el.scrollTop = el.scrollHeight;
+}
+function rollIntent() {
+var e = G.battle.enemy;
+var r = Math.random();
+if (e.boss &&!e.enraged && e.hp < e.maxHp * 0.5) {
+e.enraged = true; e.atkBuff += 6;
+logLine("bad", "董卓暴怒：<b>「敢犯我虎威！」</b>攻击大幅提升！");
+sfx("hurt");
+}
+if (r < 0.58) e.intent = { type: "attack", dmg: Math.round(e.atk * rand(0.9, 1.15))};
+else if (r < 0.76) e.intent = { type: "heavy", dmg: Math.round(e.atk * rand(1.55, 1.85))};
+else if (r < 0.88) e.intent = { type: "defend", block: randi(8, 14) + Math.floor(G.floor * 0.8)};
+else e.intent = { type: "buff"};
+}
+function intentText() {
+var it = G.battle.enemy.intent;
+if (!it) return "";
+if (it.type === "attack") return icon("sword") + " 意图：攻击（约 " + it.dmg + " 点伤害）";
+if (it.type === "heavy") return icon("flame") + " 意图：蓄力重击（约 " + it.dmg + " 点伤害！）";
+if (it.type === "defend") return icon("shield") + " 意图：结阵防御";
+return icon("bolt") + " 意图：鼓舞士气（攻击提升）";
+}
+function renderBattle() {
+var p = G.player, e = G.battle.enemy;
+$("p-avatar").textContent = G.hero.avatar;
+$("p-name").textContent = G.hero.name;
+$("p-title").textContent = G.hero.title;
+$("p-hpbar").style.width = clamp(p.hp / p.maxHp * 100, 0, 100) + "%";
+$("p-hp").textContent = Math.ceil(p.hp) + " / " + p.maxHp;
+$("p-block-num").innerHTML = p.block > 0? "格挡 <b>" + p.block + "</b>": "";
+$("p-enbar").style.width = clamp(p.energy, 0, 100) + "%";
+$("p-en").textContent = Math.floor(p.energy) + " / 100";
+$("p-atk").textContent = p.atk;
+var chips = "";
+if (p.block > 0) chips += '<span class="chip">格挡 ' + p.block + "</span>";
+if (G.hero.dodge || p.dodge > 0) chips += '<span class="chip good">闪避 ' + Math.round(p.dodge * 100) + "%</span>";
+if (p.crit > 0.10) chips += '<span class="chip good">暴击 ' + Math.round(p.crit * 100) + "%</span>";
+$("p-chips").innerHTML = chips;
+
+$("e-avatar").textContent = e.avatar;
+$("e-name").textContent = e.name;
+$("e-title").textContent = e.title + (G.battle.kind === "elite"? " · 精英": "");
+$("e-hpbar").style.width = clamp(e.hp / e.maxHp * 100, 0, 100) + "%";
+$("e-hp").textContent = Math.max(0, Math.ceil(e.hp)) + " / " + e.maxHp;
+$("e-block-num").innerHTML = e.block > 0? "格挡 <b>" + e.block + "</b>": "";
+$("e-intent").innerHTML = intentText();
+var echips = "";
+if (e.block > 0) echips += '<span class="chip">格挡 ' + e.block + "</span>";
+if (e.burn > 0) echips += '<span class="chip bad">灼烧 ' + e.burn + " 回合</span>";
+if (e.weaken > 0) echips += '<span class="chip bad">虚弱 ' + e.weaken + " 回合</span>";
+if (e.atkBuff > 0) echips += '<span class="chip bad">攻击 +' + e.atkBuff + "</span>";
+if (e.enraged) echips += '<span class="chip bad">暴怒</span>';
+$("e-chips").innerHTML = echips;
+
+renderActions();
+updateStatusbar();
+}
+function renderActions() {
+var p = G.player, busy = G.battle.busy;
+var box = $("battle-actions");
+box.innerHTML = "";
+function addBtn(cls, name, cost, desc, disabled, fn) {
+var b = document.createElement("button");
+b.type = "button"; b.className = "act-btn " + cls;
+b.innerHTML = '<div class="a-name">' + name + (cost? '<span class="a-cost">' + cost + "</span>": "") + '</div><div class="a-desc">' + desc + "</div>";
+b.disabled = disabled || busy;
+b.addEventListener("click", fn);
+box.appendChild(b);
+}
+addBtn("", "普通攻击", "", "造成 100% 攻击伤害，战意 +12", false, function () { playerAttack(1, 1, false);});
+G.hero.skills.forEach(function (s) {
+addBtn(s.ult? "ult": "", s.name, "战意 " + s.cost, s.desc, p.energy < s.cost, function () { useSkill(s);});
+});
+addBtn("def", "防御", "", "获得 " + blockAmount() + " 点格挡，战意 +8", false, function () { playerDefend();});
+addBtn("", "金疮药", "", p.potions > 0? ("回复 " + potionPct() + "% 气血（余 " + p.potions + " 颗）"): "丹药已用尽", p.potions <= 0, function () { usePotion();});
+}
+function blockAmount() { return 9 + relicCount("kongcheng") * 6 + Math.floor(G.floor * 0.5);}
+function potionPct() { return relicCount("shenyi") > 0? 50: 30;}
+function gainEnergy(n) {
+var bonus = (G.hero.energyBonus || 0) + relicCount("yushan") * 6;
+G.player.energy = clamp(G.player.energy + n + (n > 0? bonus * (n >= 10? 1: 0.5): 0), 0, 100);
+}
+
+function floatDmg(cardId, text, cls) {
+var card = $(cardId);
+var span = document.createElement("span");
+span.className = "float-dmg " + cls;
+span.textContent = text;
+span.style.left = rand(28, 62) + "%";
+span.style.top = rand(16, 34) + "%";
+card.appendChild(span);
+setTimeout(function () { span.remove();}, 950);
+}
+function hitFx(cardId) {
+var card = $(cardId);
+card.classList.remove("hit"); void card.offsetWidth; card.classList.add("hit");
+}
+function dealDamageToEnemy(rawDmg, isCrit) {
+var e = G.battle.enemy;
+var dmg = Math.max(1, Math.round(rawDmg));
+var absorbed = Math.min(e.block, dmg);
+e.block -= absorbed; dmg -= absorbed;
+e.hp -= dmg;
+if (absorbed > 0) logLine("sys", "敌军格挡抵挡了 " + absorbed + " 点伤害。");
+return { dmg: dmg, absorbed: absorbed, crit: isCrit};
+}
+function rollCrit(forceCrit) {
+if (forceCrit) return true;
+return Math.random() < G.player.crit;
+}
+function strikeOnce(mult, isSkill, forceCrit) {
+var p = G.player;
+var base = p.atk * mult * rand(0.92, 1.08);
+if (isSkill) base *= 1 + relicCount("bingfa") * 0.30;
+else base *= 1 + relicCount("gongbu") * 0.25;
+var crit = rollCrit(forceCrit);
+if (crit) base *= p.critDmg;
+var res = dealDamageToEnemy(base, crit);
+hitFx("card-enemy");
+floatDmg("card-enemy", "-" + res.dmg + (crit? " 暴击!": ""), crit? "crit": "hurt");
+sfx(crit? "crit": "hit");
+return res;
+}
+function playerAttack(mult, hits, isSkill) {
+if (G.battle.busy) return;
+G.battle.busy = true;
+var total = 0, anyCrit = false;
+var forceCrit = G.battle.firstStrike && relicCount("chitu") > 0;
+for (var i = 0; i < hits; i++) {
+var res = strikeOnce(mult, isSkill, forceCrit && i === 0);
+total += res.dmg; anyCrit = anyCrit || res.crit;
+if (G.battle.enemy.hp <= 0) break;
+}
+G.battle.firstStrike = false;
+gainEnergy(12);
+logLine("you", G.hero.name + " 出手" + (hits > 1? "连击 " + hits + " 次": "") + "，共造成 <b>" + total + "</b> 点伤害" + (anyCrit? "（含暴击）": "") + "。");
+afterPlayerAction();
+}
+function useSkill(s) {
+if (G.battle.busy || G.player.energy < s.cost) return;
+G.battle.busy = true;
+G.player.energy -= s.cost;
+var total = 0;
+var forceCrit = G.battle.firstStrike && relicCount("chitu") > 0;
+for (var i = 0; i < s.hits; i++) {
+var res = strikeOnce(s.mult, true, forceCrit && i === 0);
+total += res.dmg;
+if (G.battle.enemy.hp <= 0) break;
+}
+G.battle.firstStrike = false;
+var extra = "";
+var e = G.battle.enemy;
+if (e.hp > 0) {
+if (s.burn) { e.burn = Math.max(e.burn, s.burn); extra += " 敌军被点燃！";}
+if (s.weaken) { e.weaken = Math.max(e.weaken, s.weaken); extra += " 敌军陷入虚弱！";}
+}
+if (s.healPct) {
+var healed = healPlayer(G, Math.round(G.player.maxHp * s.healPct), true);
+if (healed > 0) { floatDmg("card-player", "+" + healed, "heal"); extra += " 回复气血 " + healed + "。";}
+}
+logLine("you", "释放，共造成 <b>" + total + "</b> 点伤害。" + extra);
+afterPlayerAction();
+}
+function playerDefend() {
+if (G.battle.busy) return;
+G.battle.busy = true;
+var amt = blockAmount();
+G.player.block += amt;
+gainEnergy(8);
+sfx("block");
+logLine("you", G.hero.name + " 举盾结阵，获得 <b>" + amt + "</b> 点格挡。");
+afterPlayerAction();
+}
+function usePotion() {
+if (G.battle.busy || G.player.potions <= 0) return;
+G.battle.busy = true;
+G.player.potions -= 1;
+var healed = healPlayer(G, Math.round(G.player.maxHp * potionPct() / 100), true);
+sfx("heal");
+floatDmg("card-player", "+" + healed, "heal");
+logLine("good", "服下金疮药，回复 <b>" + healed + "</b> 点气血。");
+afterPlayerAction();
+}
+function afterPlayerAction() {
+renderBattle();
+if (G.battle.enemy.hp <= 0) { setTimeout(winBattle, 620); return;}
+setTimeout(enemyTurn, 560);
+}
+function enemyTurn() {
+var e = G.battle.enemy, p = G.player;
+/* 灼烧结算 */
+if (e.burn > 0) {
+var bd = Math.max(3, Math.round(e.maxHp * 0.06));
+e.hp -= bd; e.burn -= 1;
+floatDmg("card-enemy", "-" + bd + " 灼烧", "hurt");
+logLine("bad", "火焰灼烧「" + e.name + "」，造成 " + bd + " 点伤害。");
+if (e.hp <= 0) { renderBattle(); setTimeout(winBattle, 620); return;}
+}
+var it = e.intent;
+if (it) {
+if (it.type === "attack" || it.type === "heavy") {
+var raw = it.dmg + e.atkBuff;
+if (e.weaken > 0) raw = Math.round(raw * 0.65);
+if (Math.random() < p.dodge) {
+logLine("good", G.hero.name + " 身形一晃，<b>闪避</b>了「" + e.name + "」的攻击！");
+floatDmg("card-player", "闪避", "heal");
+sfx("block");
+} else {
+var dmg = raw;
+var absorbed = Math.min(p.block, dmg);
+p.block -= absorbed; dmg -= absorbed;
+dmg = Math.max(0, Math.round(dmg * (1 - relicCount("jinjia") * 0.12)));
+p.hp -= dmg;
+hitFx("card-player");
+$("battle-stage").classList.remove("shake"); void $("battle-stage").offsetWidth; $("battle-stage").classList.add("shake");
+floatDmg("card-player", "-" + dmg, "hurt");
+sfx("hurt");
+gainEnergy(6);
+logLine("bad", "「" + e.name + "」" + (it.type === "heavy"? "蓄力重击": "发起攻击") + (absorbed > 0? "，格挡抵挡 " + absorbed + " 点，": "，") + "造成 <b>" + dmg + "</b> 点伤害。");
+}
+} else if (it.type === "defend") {
+e.block += it.block;
+logLine("sys", "「" + e.name + "」结阵防御，获得 " + it.block + " 点格挡。");
+} else if (it.type === "buff") {
+e.atkBuff += 3;
+logLine("bad", "「" + e.name + "」擂鼓助威，攻击 +3。");
+}
+}
+if (e.weaken > 0) e.weaken -= 1;
+p.block = 0; /* 格挡只护一回合 */
+G.battle.turn += 1;
+G.battle.busy = false;
+if (p.hp <= 0) { renderBattle(); setTimeout(function () { endGame(false);}, 500); return;}
+rollIntent();
+renderBattle();
+}
+function winBattle() {
+var kind = G.battle.kind;
+G.kills += 1;
+if (kind === "elite") G.elites += 1;
+sfx("win");
+logLine("good", "「" + G.battle.enemy.name + "」被斩于马下！");
+var postHeal = relicCount("tuntian") * 10;
+if (postHeal > 0) { var h = healPlayer(G, postHeal, true); if (h > 0) logLine("good", "屯田令生效，回复 " + h + " 点气血。");}
+G.battle = null;
+updateStatusbar();
+if (kind === "boss") { endGame(true); return;}
+setTimeout(function () { showReward(false, kind === "elite");}, 450);
+}
+
+    /* ================= 战后奖励 ================= */
+    function showReward(fromTreasure, eliteWin) {
+      var pool = shuffle(RELICS.slice());
+      var picks = [];
+      if (eliteWin || fromTreasure) {
+        var good = pool.filter(function (r) { return r.rarity !== "common"; });
+        picks.push(good[0]);
+        pool = pool.filter(function (r) { return r !== good[0]; });
+      }
+      while (picks.length < 3 && pool.length) picks.push(pool.pop());
+      /* 附赠一个保底选项：回复 / 属性，避免三件都不合用 */
+      var grid = $("reward-grid");
+      grid.innerHTML = "";
+      $("reward-hint").textContent = fromTreasure ? "宝箱里静静躺着三件宝物，只能取走一件。" :
+        (eliteWin ? "斩杀名将，缴获颇丰——其中必有一件珍品以上。" : "缴获的战利品只能带走一件，慎选。");
+      picks.forEach(function (relic) {
+        var owned = relicCount(relic.id);
+        var card = document.createElement("button");
+        card.type = "button"; card.className = "reward-card";
+        card.innerHTML =
+          '<span class="rarity r-' + relic.rarity + '">' + RARITY_NAME[relic.rarity] + (owned ? " · 已有 " + owned + " 重（可叠加）" : "") + '</span>' +
+          '<span class="r-icon">' + icon(relic.icon) + "</span>" +
+          "<h3>" + relic.name + "</h3><p>" + relic.desc + "</p>";
+        card.addEventListener("click", function () {
+          sfx("pick");
+          grantRelic(relic);
+          updateStatusbar();
+          advanceAfterNode();
+        });
+        grid.appendChild(card);
+      });
+      /* 第四张：稳妥的补给牌（占一格小卡） */
+      var supply = document.createElement("button");
+      supply.type = "button"; supply.className = "reward-card";
+      supply.innerHTML =
+        '<span class="rarity r-common">补 给</span><span class="r-icon">' + icon("potion") + "</span>" +
+        "<h3>军粮与伤药</h3><p>回复 30% 气血，丹药 +1。不拿宝物，稳扎稳打。</p>";
+      supply.addEventListener("click", function () {
+        sfx("heal");
+        healPlayer(G, Math.round(G.player.maxHp * 0.30), true);
+        G.player.potions += 1;
+        updateStatusbar();
+        advanceAfterNode();
+      });
+      grid.appendChild(supply);
+      grid.style.gridTemplateColumns = "";
+      showScreen("screen-reward");
+    }
+    function advanceAfterNode() {
+      if (G.player.hp <= 0) { endGame(false); return; }
+      if (G.floor >= TOTAL_FLOORS) { endGame(true); return; }
+      nextFloor();
+    }
+
+    /* ================= 奇遇 ================= */
+    var usedEvents = [];
+    function startEvent() {
+      var avail = EVENTS.filter(function (e, i) { return usedEvents.indexOf(i) === -1; });
+      var ev = avail.length ? pick(avail) : pick(EVENTS);
+      usedEvents.push(EVENTS.indexOf(ev));
+      $("event-title").textContent = ev.title;
+      $("event-text").innerHTML = ev.text;
+      $("event-result").classList.add("hidden");
+      $("event-continue-wrap").classList.add("hidden");
+      var box = $("event-choices");
+      box.innerHTML = "";
+      ev.choices.forEach(function (choice) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "choice-btn";
+        b.innerHTML = '<div class="c-name">' + choice.name + '</div><div class="c-desc">' + choice.desc + "</div>";
+        if (choice.needs && !choice.needs(G)) { b.disabled = true; b.querySelector(".c-desc").textContent += "（当前条件不满足）"; }
+        b.addEventListener("click", function () {
+          var msg = choice.run(G);
+          box.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
+          var res = $("event-result");
+          res.innerHTML = msg;
+          res.classList.remove("hidden");
+          $("event-continue-wrap").classList.remove("hidden");
+          sfx("pick");
+          updateStatusbar();
+          if (G.player.hp <= 0) endGame(false);
+        });
+        box.appendChild(b);
+      });
+      showScreen("screen-event");
+    }
+    $("btn-event-continue").addEventListener("click", function () { advanceAfterNode(); });
+
+    /* ================= 休整 ================= */
+    function startRest() {
+      $("rest-result").classList.add("hidden");
+      $("rest-continue-wrap").classList.add("hidden");
+      renderRelics("relic-shelf-rest");
+      var box = $("rest-choices");
+      box.innerHTML = "";
+      function addChoice(name, desc, disabled, fn) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "choice-btn";
+        b.innerHTML = '<div class="c-name">' + name + '</div><div class="c-desc">' + desc + "</div>";
+        b.disabled = !!disabled;
+        b.addEventListener("click", function () {
+          var msg = fn();
+          box.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
+          var res = $("rest-result");
+          res.innerHTML = msg;
+          res.classList.remove("hidden");
+          $("rest-continue-wrap").classList.remove("hidden");
+          updateStatusbar();
+        });
+        box.appendChild(b);
+      }
+      addChoice("安睡一夜", "军医熬药、伙夫造饭：回复 35% 气血。", false, function () {
+        var h = healPlayer(G, Math.round(G.player.maxHp * 0.35), true);
+        sfx("heal");
+        return "一夜好睡，醒来时伤口都已结痂：<b>气血 +" + h + "</b>。";
+      });
+      addChoice("淬炼宝物", "借铁匠的炉火淬炼一件随身宝物，令其效果翻倍（随机一件）。", G.relics.length === 0, function () {
+        sfx("pick");
+        return upgradeRandomRelic(G);
+      });
+      addChoice("操练兵马", "不休息，连夜操练：攻击 +3。", false, function () {
+        G.player.atk += 3;
+        sfx("pick");
+        return "一夜操练，军阵愈发娴熟：<b>攻击 +3</b>。";
+      });
+      showScreen("screen-rest");
+    }
+    $("btn-rest-continue").addEventListener("click", function () { advanceAfterNode(); });
+
+    /* ================= 结算 ================= */
+    function endGame(won) {
+      G.over = true;
+      if (G.battle) G.battle = null;
+      sfx(won ? "win" : "lose");
+      $("end-seal").textContent = won ? "胜" : "殁";
+      var t = $("end-title");
+      t.textContent = won ? "天下归一" : "马革裹尸";
+      t.className = "end-title brush" + (won ? " win" : "");
+      var mins = Math.max(1, Math.round((Date.now() - G.startedAt) / 60000));
+      $("end-sub").innerHTML = won
+        ? "董卓授首，洛阳光复。" + G.hero.name + " 率残部自边陲一路杀至帝都，十二关烽火，终成不世之功。这一局的故事，到此圆满。"
+        : G.hero.name + " 倒在了第 " + G.floor + " 关的征途上。乱世无情，名将亦有尽时——但肉鸽的规矩是：倒下，就再开一局。";
+      $("end-stats").innerHTML =
+        '<div class="es"><b>' + G.floor + "</b><span>挺进关数</span></div>" +
+        '<div class="es"><b>' + G.battles + "</b><span>经历战斗</span></div>" +
+        '<div class="es"><b>' + G.elites + "</b><span>斩杀精英</span></div>" +
+        '<div class="es"><b>' + G.relics.reduce(function (s, r) { return s + r.count; }, 0) + "</b><span>获得宝物</span></div>";
+      renderRelics("relic-shelf-end");
+      updateStatusbar();
+      showScreen("screen-end");
+    }
+
+    /* ================= 全局按钮 ================= */
+    function backToStart() {
+      G = null;
+      usedEvents = [];
+      updateStatusbar();
+      renderHeroes();
+      showScreen("screen-start");
+    }
+    $("btn-again").addEventListener("click", function () {
+      var hero = G ? G.hero : HEROES[0];
+      newGame(hero);
+      updateStatusbar();
+      nextFloor();
+    });
+    $("btn-change-hero").addEventListener("click", backToStart);
+    $("btn-restart").addEventListener("click", backToStart);
+    $("btn-sound").addEventListener("click", function () {
+      soundOn = !soundOn;
+      $("sound-icon").style.opacity = soundOn ? "1" : "0.35";
+      if (soundOn) sfx("pick");
+    });
+
+    /* ================= 初始化 ================= */
+    renderHeroes();
+    updateStatusbar();
+    </script>
+  </body>
+</html>
